@@ -1,10 +1,7 @@
 __metaclass__ = type
 class Rule:
     def action(self, block, handler):
-        handler.start(self.type)
-        handler.feed(block)
-        handler.end(self.type)
-        return True
+        return handler.tag(self.type, block)
 class HeadingRule(Rule):
     type = 'heading'
     def condition(self, block):
@@ -21,23 +18,29 @@ class ListitemRule(Rule):
     def condition(self, block):
         return block[0] == '-'
     def action(self, block, handler):
-        handler.start(self.type)
-        handler.feed(block[1:].strip())
-        handler.end(self.type)
-        return True
+        return handler.tag(self.type, block[1:].strip())
 class ListRule(ListitemRule):
     type = 'list'
+    listTable = []
     inside = False
     def condition(self, block):
         return True
     def action(self, block, handler):
-        if not self.inside and ListitemRule.condition(self, block):
-            handler.start(self.type)
+        listItemCondition = ListitemRule.condition(self, block)
+        
+        if not self.inside and listItemCondition:
+            self.listTable = []
             self.inside = True
-        elif self.inside and not ListitemRule.condition(self, block):
-            handler.end(self.type)
+        elif self.inside and not listItemCondition:
             self.inside = False
-        return False
+            return handler.tag(self.type, ''.join(self.listTable))
+            
+        if self.inside:
+            self.listTable.append(handler.tag(ListitemRule.type, block[1:].strip()))
+        else:
+            return False
+
+        return True
 class ParagraghRule(Rule):
     type = 'paragragh'
     def condition(self, block):

@@ -18,21 +18,22 @@ class Parser:
 	    return re.sub(pattern, handler.sub(name), block)
 	self.filters.append(filter)
     def parse(self, file):
-        self.handler.start('document')
-	for block in blocks(file):
-	    for filter in self.filters:
-	        block = filter(block, self.handler)
-	    for rule in self.rules:
-	        if rule.condition(block):
-		    last = rule.action(block, self.handler)
-		    if last: break
-        self.handler.end('document')
+        body = []
+    	for block in blocks(file):
+    	    for filter in self.filters:
+    	        block = filter(block, self.handler)
+    	    for rule in self.rules:
+    	        if rule.condition(block):
+    		    last = rule.action(block, self.handler)
+    		    if last:
+                        if last is not True: body.append(last)
+                        if last is True or last[:4] != '<ul>': break
+
+        return self.handler.document(''.join(body))
 class BasicTextParser(Parser):
     def __init__(self, handler):
         Parser.__init__(self, handler)
         self.addRule(ListRule())
-        self.addRule(ListitemRule())
-        self.addRule(TitleRule())
         self.addRule(HeadingRule())
         self.addRule(ParagraghRule())
 
@@ -43,4 +44,4 @@ class BasicTextParser(Parser):
 handler = HTMLRenderer()
 parser = BasicTextParser(handler)
 
-parser.parse(sys.stdin)
+print parser.parse(sys.stdin)

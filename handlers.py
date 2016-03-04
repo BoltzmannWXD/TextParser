@@ -4,12 +4,6 @@ class Handler:
         method = getattr(self, prefix+name, None)
 	if callable(method): return method(*args)
 
-    def start(self, name):
-        self.callback('start_', name)
-
-    def end(self, name):
-        self.callback('end_', name)
-
     def sub(self, name):
         def substitution(match):
 	    result = self.callback('sub_', name, match)
@@ -18,35 +12,24 @@ class Handler:
 	return substitution
 
 class HTMLRenderer(Handler):
-    def start_document(self):
-        print '<html><head><title>...</title></head><body>'
-    def end_document(self):
-        print '</body></html>'
-    def start_paragragh(self):
-        print '<p>'
-    def end_paragragh(self):
-        print '</p>'
-    def start_heading(self):
-        print '<h2>'
-    def end_heading(self):
-        print '</h2>'
-    def start_list(self):
-        print '<ul>'
-    def end_list(self):
-        print '</ul>'
-    def start_listitem(self):
-        print '<li>'
-    def end_listitem(self):
-        print '</li>'
-    def start_title(self):
-        print '<title>'
-    def end_title(self):
-        print '</title>'
+    documents = {'paragragh': 'p',
+                 'heading': 'h2',
+                 'list': 'ul',
+                 'listitem': 'li',
+                 'title': 'title',
+                 'body': 'body',
+                 'head': 'head',
+                 'document': 'html'
+     }
+    def document(self, body, title='...'):
+        return '<html><head><title>%s</title></head><body>%s</body></html>' % (title, body)
+    def tag(self, type, content):
+        tag = self.documents.get(type)
+        if not tag: raise TypeError,'There are no %s.' % type
+        return '<%(tag)s>%(content)s</%(tag)s>' % {'tag': tag, 'content': content}
     def sub_emphasis(self, match):
         return '<em>%s</em>' % match.group(1)
     def sub_url(self, match):
         return '<a href="%s">%s</a>' % (match.group(1), match.group(1))
     def sub_mail(self, match):
         return '<a href="mailto:%s">%s</a>' % (match.group(1), match.group(1))
-    def feed(self, data):
-        print data
